@@ -1,0 +1,64 @@
+# This is my first attempt at a file to GitHub let alone configuration
+# jwsii llc
+# this is going to be stuff I "force inherited" from various places around the web
+#
+#  http://perlstalker.vuser.org/blog/2014/10/11/switching-to-docker-coreos/
+#
+#  an update here
+#
+{
+
+
+[unit]
+Description=jimtest.ourcio.net web server
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/mkdir /var/www
+ExecStartPre=/usr/bin/docker pull nginx
+ExecStart=/usr/bin/docker run --rm --name jimtest_web-server -v /var/www:/usr/share/nginx/html -p 80:80 ngix
+
+[Install]
+WantedBy=multi-user.target
+
+
+[unit]
+Description=Generate and Deploy Site 
+After=jimtest.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RemainAfterExit=no
+Type=simple
+ExecStartPre=/usr/bin/docker pull jschott/deploy
+ExecStart=/usr/bin/docker run --rm --name jimtest_deploy --volumes-from jimtest_web-server jschott/deploy2
+
+
+[unit]
+Description=Generates scripture feed
+After=jimtest.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RemainAfterExit=no
+Type=simple
+ExecStartPre=/usr/bin/docker pull jschott/scripture-feed
+ExecStart=/usr/bin/docker run --rm --name jimtest_scriptures --volumes-from jimtest_web-server jschott/scripture-feed
+
+[unit]
+Description=Generates scripture feed
+
+[Timer]
+OnBootSec=25min
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
+
+}
